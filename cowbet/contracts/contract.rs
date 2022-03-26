@@ -9,8 +9,8 @@ use cw2::set_contract_version;
 
 use crate::coin_helpers::validate_sent_sufficient_coin;
 use crate::error::ContractError;
-use crate::msg::{CreateVaultResponse, ExecuteMsg, InstantiateMsg, VaultResponse, QueryMsg, TokenStakeResponse};
-use crate::state::{ bank, bank_read, config, config_read, poll, poll_read, Vault, VaultStatus, State, Voter,
+use crate::msg::{CreateVaultResponse, ExecuteMsg, InstantiateMsg, VaultResponse, QueryMsg, TokenBetResponse};
+use crate::state::{ bank, bank_read, config, config_read, vault, vault_read, Vault, VaultStatus, State, Voter,
 };
 
 const MIN_BET_AMOUNT: u128 = 1;
@@ -162,7 +162,7 @@ fn validate_description(description: &str) -> Result<(), ContractError> {
 /// validate_end_height returns an error if the poll ends in the past
 fn validate_end_height(end_height: Option<u64>, env: Env) -> Result<(), ContractError> {
     if end_height.is_some() && env.block.height >= end_height.unwrap() {
-        Err(ContractError::PollCannotEndInPast {})
+        Err(ContractError::VaultCannotEndInPast {})
     } else {
         Ok(())
     }
@@ -187,7 +187,7 @@ pub fn create_vault(
 
     let new_vault = Vault {
         creator: info.sender,
-        status: PollStatus::DepositsOpen, // Default to the 'Deposit' phase on creation.
+        status: VaultStatus::DepositsOpen, // Default to the 'Deposit' phase on creation.
         yes_votes: Uint128::zero(),
         no_votes: Uint128::zero(),
         voters: vec![],
@@ -362,10 +362,10 @@ fn send_tokens(to_address: &Addr, amount: Vec<Coin>, action: &str) -> Response {
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&config_read(deps.storage).load()?),
-        QueryMsg::TokenStake { address } => {
+        QueryMsg::TokenBet { address } => {
             token_balance(deps, deps.api.addr_validate(address.as_str())?)
         }
-        QueryMsg::Poll { poll_id } => query_poll(deps, vault_id),
+        QueryMsg::Vault { vault_id } => query_vault(deps, vault_id),
     }
 }
 
@@ -393,7 +393,7 @@ fn token_balance(deps: Deps, address: Addr) -> StdResult<Binary> {
         .may_load(address.as_str().as_bytes())?
         .unwrap_or_default();
 
-    let resp = TokenStakeResponse {
+    let resp = TokenBetResponse {
         token_balance: token_manager.token_balance,
     };
 

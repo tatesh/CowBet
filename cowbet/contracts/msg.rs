@@ -1,27 +1,63 @@
+use crate::state::PollStatus;
+use cosmwasm_std::Uint128;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub count: i32,
+    pub denom: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    Increment {},
-    Reset { count: i32 },
+    CastBet {
+        vault_id: u64,
+        vote: String,
+        weight: Uint128,
+    },
+    BetTokens {},
+    WithdrawRewards {
+        amount: Option<Uint128>,
+    },
+    CreateVault {
+        description: String,
+        start_height: Option<u64>,
+        end_height: Option<u64>,
+    },
+    EndVault {
+        vault_: u64,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    // GetCount returns the current count as a json-encoded number
-    GetCount {},
+    Config {},
+    TokenBet { address: String },
+    Vault { vault_id: u64 },
 }
 
-// We define a custom struct for each query response
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct CountResponse {
-    pub count: i32,
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema)]
+pub struct VaultResponse {
+    pub creator: String,
+    pub status: VaultStatus,
+    pub end_height: Option<u64>,
+    pub start_height: Option<u64>,
+    pub description: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema)]
+pub struct CreateVaultResponse {
+    pub vault_id: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema)]
+pub struct VaultCountResponse {
+    pub vault_count: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema)]
+pub struct TokenBetResponse {
+    pub token_balance: Uint128,
 }
