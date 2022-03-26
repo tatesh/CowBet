@@ -4,6 +4,10 @@
 module.exports = {
   bombay: {
     mnemonic:
-      "liberty canyon paddle analyst margin chicken legal yard drop volume security end inform this adult merry fee smoke humble estate toy fossil filter eight",
+      "result same slow despair clock arrow sunny glare flip caught vast wave space neither funny shiver disease lunch mercy unveil poet spring brass else",
+  },
+  validator: {
+    mnemonic:
+      "result same slow despair clock arrow sunny glare flip caught vast wave space neither funny shiver disease lunch mercy unveil poet spring brass else",
   },
 };

@@ -6,7 +6,7 @@ task(async ({ wallets, refs, config, client }) => {
   console.log("prev count = ", count);
 
   // execute is a thin wrapper of signing and broadcasting execute contract
-  await client.execute(wallets.validator, "counter", {
+  await client.execute(wallets.bombay, "counter", {
     increment: {},
   });
   const count2 = await client.query("counter", { get_count: {} });
