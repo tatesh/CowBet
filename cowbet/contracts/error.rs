@@ -28,7 +28,7 @@ pub enum ContractError {
     VaultDoesNotExist {},
 
     #[error("Poll cannot end in past")]
-    PollCannotEndInPast {},
+    VaultCannotEndInPast {},
 
     #[error("sender is not the creator of the Vault (sender {sender} creator {creator})")]
     VaultNotCreator { sender: String, creator: String },
