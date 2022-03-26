@@ -9,14 +9,14 @@ use cosmwasm_storage::{
 };
 
 static CONFIG_KEY: &[u8] = b"config";
-static POLL_KEY: &[u8] = b"bets";
+static VAULT_KEY: &[u8] = b"vault";
 static BANK_KEY: &[u8] = b"bank";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct State {
     pub count: i32,
     pub owner: Addr,
-    pub bet_count: u64,
+    pub vault_count: u64,
     pub staked_tokens: Uint128,
 }
 
@@ -29,31 +29,32 @@ pub const STATE: Item<State> = Item::new("state");
 pub struct TokenManager {
     pub token_balance: Uint128,             // total staked balance
     pub locked_tokens: Vec<(u64, Uint128)>, //maps poll_id to weight voted
-    pub participated_bets: Vec<u64>,       // bet_id
+    pub participated_vaults: Vec<u64>,       // vault_id
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct BetParticipant { //previously Voter from example
+pub struct Voter {
     pub vote: String, //yes or no
     pub weight: Uint128,
-    pub pool_pct: Uint128, //how much you bet relative to everyone 
+    pub pool_pct: Uint128, //how much you vault relative to everyone 
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub enum BettingStatus {
+pub enum VaultStatus {
+    DepositsOpen, 
     InProgress,
     Tally,
     Finished,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct Bet {
+pub struct Vault {
     pub creator: Addr,
-    pub status: PollStatus,
+    pub status: VaultStatus,
     pub yes_votes: Uint128,
     pub no_votes: Uint128,
-    pub bet_participants: Vec<Addr>,
-    pub bet_partic_info: Vec<Voter>,
+    pub voters: Vec<Addr>,
+    pub voter_info: Vec<Voter>,
     pub end_height: u64,
     pub start_height: Option<u64>,
     pub description: String,
@@ -69,12 +70,12 @@ pub fn config_read(storage: &dyn Storage) -> ReadonlySingleton<State> {
     singleton_read(storage, CONFIG_KEY)
 }
 
-pub fn bet(storage: &mut dyn Storage) -> Bucket<Poll> {
-    bucket(storage, BET_KEY)
+pub fn vault(storage: &mut dyn Storage) -> Bucket<Poll> {
+    bucket(storage, VAULT_KEY)
 }
 
-pub fn bet_read(storage: &dyn Storage) -> ReadonlyBucket<Poll> {
-    bucket_read(storage, BET_KEY)
+pub fn vault_read(storage: &dyn Storage) -> ReadonlyBucket<Poll> {
+    bucket_read(storage, VAULT_KEY)
 }
 
 pub fn bank(storage: &mut dyn Storage) -> Bucket<TokenManager> {
