@@ -28,7 +28,7 @@ pub const STATE: Item<State> = Item::new("state");
 #[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct TokenManager {
     pub token_balance: Uint128,             // total staked balance
-    pub locked_tokens: Vec<(u64, Uint128)>, //maps poll_id to weight voted
+    pub bet_token: Vec<(u64, Uint128)>, //maps poll_id to weight voted
     pub participated_vaults: Vec<u64>,       // vault_id
 }
 

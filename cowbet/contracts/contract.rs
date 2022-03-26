@@ -255,8 +255,149 @@ pub fn end_deposits(
     }
     let tallied_weight = yes + no;
 
-    let mut
+    if env.block.height >= a_vault.end_height {
+        for voter in &a_vault.voter_info {
+            allow_claim(deps.storage, voter, vault_id)?;
+        }
+    }
+    Ok(r)
+}
 
+// At the end of the epoch, allow the address to withdraw their rewards.
+fn allow_claim(
+    storage: &mut dyn Storage,
+    voter: &Addr,
+    vault_id: u64,
+) -> Result<Response, ContractError> {
+    let voter_key = &voter.as_str().as_bytes();
+    let mut token_manager = bank_read(storage).load(voter_key).unwrap();
+    // allow_claim entails of removing the mapped vault_id, & retaining the rest
+    token_manager.bet_tokens.retain(|(k, _)| k != &vault_id);
+    bank(storage).save(voter_key, &token_manager)?;
+    Ok(Response::default())
+}
+
+fn bet_amount(voter: &[u8], storage: &dyn Storage) -> Uint128 {
+    let token_manager = bank_read(storage).load(voter).unwrap();
+    token_manager
+        .bet_amount
+        .iter()
+        .map(|(_, v)| *v)
+        .max()
+        .unwrap_or_default()
+}
+
+pub fn cast_bet(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    vault_id: u64,
+    vote: String,
+    weight: Uint128,
+) -> Result<Response, ContractError> {
+    let vault_key = &vault_id.to_be_bytes();
+    let state = config_read(deps.storage).load()?;
+    if vault_id == 0 || state.vault_count > vault_id {
+        return Err(ContractError::VaultDoesNotExist {});
+    }
+    if (state.vote != "Yes" && state.vote != "No") {
+        return Err(ContractError::InvalidBetEvent {});
+    }
+
+    let mut a_vault - vault(deps.storage).load(vault_key)?;
+
+    if a_vault.status != VaultStatus::DepositsOpen {
+        return Err(ContractError::VaultNotOpenForDeposits {});
+    }
+
+    let key = info.sender.as_str().as_bytes();
+    let mut token_manager = bank_read(deps.storage).may_load(key)?.unwrap_or_default();
+
+    if token_manager.token_balance < weight {
+        return Err(ContractError::VaultInsufficientAmt {});
+    }
+    token_manager.participated_vaults.push(vault_id);
+    token_manager.bet_tokens.push((vault_id, weight));
+    bank(deps.storage).save(key, &token_manager)?;
+
+    a_vault.voters.push(info.sender.clone());
+
+    // Need to include pool_pct for the voter.
+    let voter_info = Voter {vote, weight}
+    a_vault.voter_info.push(voter_info);
+    vault(deps.storage).save(vault_key, &a_vault)?;
+
+    let attributes = vec![
+        attr("action", "vote_casted"),
+        attr("vault_id", &vault_id),
+        attr("weight", &weight),
+        attr("voter", &info.sender),
+    ];
+
+    let r = Response {
+        submessages: vec![],
+        messages: vec![],
+        attributes,
+        data: None,
+    };
+    Ok(r)
+
+}
+
+fn send_tokens(to_address: &Addr, amount: Vec<Coin>, action: &str) -> Response {
+    let attributes = vec![attr("action", action), attr("to", to_address.clone())];
+
+    Response {
+        submessages: vec![],
+        messages: vec![CosmosMsg::Bank(BankMsg::Send {
+            to_address: to_address.to_string(),
+            amount,
+        })],
+        attributes,
+        data: None,
+    }
+}
+
+#[entry_point]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::Config {} => to_binary(&config_read(deps.storage).load()?),
+        QueryMsg::TokenStake { address } => {
+            token_balance(deps, deps.api.addr_validate(address.as_str())?)
+        }
+        QueryMsg::Poll { poll_id } => query_poll(deps, vault_id),
+    }
+}
+
+fn query_vault(deps: Deps, vault_id: u64) -> StdResult<Binary> {
+    let key = &vault_id.to_be_bytes();
+
+    let vault = match vault_read(deps.storage).may_load(key)? {
+        Some(vault) => Some(vault),
+        None => return Err(StdError::generic_err("Vault does not exist")),
+    }
+    .unwrap();
+
+    let resp = VaultResponse {
+        creator: vault.creator.to_string(),
+        status: vault.status,
+        end_height: Some(vault.end_height),
+        start_height: vault.start_height,
+        description: vault.description,
+    };
+    to_binary(&resp)
+}
+
+fn token_balance(deps: Deps, address: Addr) -> StdResult<Binary> {
+    let token_manager = bank_read(deps.storage)
+        .may_load(address.as_str().as_bytes())?
+        .unwrap_or_default();
+
+    let resp = TokenStakeResponse {
+        token_balance: token_manager.token_balance,
+    };
+
+    to_binary(&resp)
 }
 
 /*pub fn try_increment(deps: DepsMut) -> Result<Response, ContractError> {
