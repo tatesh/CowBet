@@ -1,7 +1,6 @@
 {
   "name": "my-terra-dapp",
   "version": "1.0.0",
-  "description": "",
   "dependencies": {
     "@iboss/terrain": "0.0.8"
   },
@@ -9,5 +8,15 @@
     "frontend"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "main": "keys.terrain.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "description": ""
 }

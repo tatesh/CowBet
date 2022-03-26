@@ -1,1 +1,7 @@
-{}
+{
+  "testnet": {
+    "counter": {
+      "codeId": "56952"
+    }
+  }
+}
